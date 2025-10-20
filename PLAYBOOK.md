@@ -13,13 +13,19 @@ The compatable python version used was:
 Batch file:
 - Http_Server.py
 
-How to run the project:
-1. Terminal Run: python3 Http_Server.py /www 2247
+How to run the project on browser:
+1. Terminal Run: python3 Http_Server.py 2247
 2. Browser one: http://localhost:2247/index.html
 3. Browser two: http://localhost:2247/index.html
 4. Browser one: Enjoy cat photo!
 5. Browser two: Enjoy your own cat photo!
 
+How to run the project on terminal:
+1. Terminal Run: python3 Http_Server.py 2247
+2. Terminal two: nc localhost 2247
+3. Terminal two: GET www/index.html HTTP/1.1
+                 User-Agent: Simple-Client/0.5
+4. Terminal two: Enjoy header and Html!
 
 ## My experience with this project
 Brief summary of your experience with the project and what was learned.

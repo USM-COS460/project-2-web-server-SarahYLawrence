@@ -48,9 +48,6 @@ def open_file(file_path):
     return content
 
 def parsing_file(line):
-    # Document root form command line
-    root_header = sys.argv[1]
-    root_header = root_header.lstrip("/")
     # Parsing file path from request command
     data = line.splitlines()[0].split(' ')
     if len(data) >= 2:
@@ -59,14 +56,14 @@ def parsing_file(line):
     else:
         site_path = ""
     
-    return site_path, root_header
+    return site_path
 
 def respons(line):
     if line.startswith("GET"):
             # Orgnizing file path
             directory_path = os.path.dirname(os.path.abspath(__file__))   
-            site_path,root_header = parsing_file(line)    
-            file_path = os.path.join(directory_path,root_header,site_path)
+            site_path = parsing_file(line)    
+            file_path = os.path.join(directory_path,site_path)
             # Getting content from file
             if os.path.isfile(file_path):
                 content = open_file(file_path)
@@ -93,13 +90,13 @@ def request(conn):
 
 def main():
     # Comandline args check 
-    if len(sys.argv) != 3:
-        print(f"Usage: python {sys.argv[0]} <document_root> <port>")
+    if len(sys.argv) != 2:
+        print(f"Usage: python {sys.argv[0]} <port>")
         sys.exit(1)
 
     # Server Listner
     host = 'localhost'
-    port = int(sys.argv[2])
+    port = int(sys.argv[1])
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
