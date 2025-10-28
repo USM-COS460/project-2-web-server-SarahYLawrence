@@ -6,8 +6,8 @@ import mimetypes
 import sys
 
 def file_type(file_path):
-    file_type = mimetypes.guess_type(file_path)
-    return file_type[0]
+    file_type,_ = mimetypes.guess_type(file_path)
+    return file_type or "text/plain"
 
 def current_datetime():
     current_datentime = datetime.now()
@@ -22,30 +22,36 @@ def responce_codes(http_status,content,file_path):
         case 200:
             responce_header = (
                 "HTTP/1.1 200 OK\r\n"
-                "Server: AlsToyBarn/1.0\r\n"
-                f"Date: {current_dateandtime}\r\n"
-                f"Content-Type: {file_type(file_path)}\r\n"
-                f"Content-Length: {len(content)}\r\n"
-                "\r\n"
             )
         # Error Case
         case 404:
             responce_header = (
             "HTTP/1.1 404 Not Found\r\n"
-            f"Date: {current_dateandtime}\r\n"
-            "\r\n"
+            )
+        # Method Not Allowed Case
+        case 405:
+            responce_header = (
+            "HTTP/1.1 405 Method Not Allowed\r\n"
             )
         # Unknown Case
         case _: 
             print("Unknown status")
+    # Full header
+    responce_header +=  ("Server: AlsToyBarn/1.0\r\n"
+            f"Date: {current_dateandtime}\r\n"
+            f"Content-Type: {file_type(file_path)}\r\n"
+            f"Content-Length: {len(content)}\r\n"
+            "\r\n")     
     return responce_header
 
 def open_file(file_path):
     if os.path.isfile(file_path):
-                # Reading the file bytes
-                with open(file_path, 'rb') as f:
+        # Reading the file bytes
+        with open(file_path, 'rb') as f:
                     content = f.read()
-    return content
+        return content
+    else:
+        return "error"
 
 def parsing_file(line):
     # Parsing file path from request command
@@ -67,36 +73,43 @@ def respons(line):
             # Getting content from file
             if os.path.isfile(file_path):
                 content = open_file(file_path)
-                return content,responce_codes(200,content,file_path)
+                if content == "error":
+                    return "",responce_codes(404,"","")
+                else:
+                    return content,responce_codes(200,content,file_path)
             else:
                 return "",responce_codes(404,"","")
     else:
-        return "",responce_codes(404,"","")
+        return "",responce_codes(405,"","")
 
 def request(conn):
-    while True:
         # Get request
-        data = conn.recv(1024)
-        line = data.decode('utf-8')
-        # Get responce from request
-        content, response = respons(line) 
-        # Send responce
-        conn.send(response.encode('utf-8'))
-        if "404" in response:
-            break
-        else:
-            conn.sendall(content)
-    conn.close()
-
+        try:
+            data = conn.recv(1024)
+            if not data:
+                conn.close()
+            else:
+                line = data.decode('utf-8')
+                # Get responce from request
+                content, response = respons(line) 
+                # Send responce
+                try:
+                    conn.sendall(response.encode('utf-8') + content)
+                except (BrokenPipeError, ConnectionResetError, OSError):
+                    conn.close()
+        except ConnectionResetError:
+            conn.close()
+  
 def main():
     # Comandline args check 
-    if len(sys.argv) != 2:
-        print(f"Usage: python {sys.argv[0]} <port>")
-        sys.exit(1)
+    # if len(sys.argv) != 2:
+    #     print(f"Usage: python {sys.argv[0]} <port>")
+    #     sys.exit(1)
 
     # Server Listner
     host = 'localhost'
-    port = int(sys.argv[1])
+    port = 2247
+    # port = int(sys.argv[1])
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
