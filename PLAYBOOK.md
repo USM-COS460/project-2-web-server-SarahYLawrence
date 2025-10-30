@@ -21,7 +21,7 @@ How to run the project on browser:
 5. Browser two: Enjoy your own cat photo!
 
 How to run the project on terminal:
-1. Terminal Run: python3 Http_Server.py 2247
+1. Terminal Run: python3 Http_Server.py /www 2247
 2. Terminal two: nc localhost 2247
 3. Terminal two: GET www/index.html HTTP/1.1
                  User-Agent: Simple-Client/0.5

@@ -1,7 +1,7 @@
 import socket
 from threading import Thread
 import os
-from datetime import datetime
+from datetime import datetime,timezone
 import mimetypes
 import sys
 
@@ -10,12 +10,14 @@ def file_type(file_path):
     return file_type or "text/plain"
 
 def current_datetime():
-    current_datentime = datetime.now()
-    current_datentime = current_datentime.strftime("%a, %d %b %Y %H:%M:%S GMT")
-    return current_datentime
+    current_date_time = datetime.now(timezone.utc)
+    current_date_time = current_date_time.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    return current_date_time
      
 def responce_codes(http_status,content,file_path):
     current_dateandtime = current_datetime()
+    current_file_type = file_type(file_path)
+    length_content = len(content)
     
     match http_status:
         # Success Case
@@ -36,12 +38,14 @@ def responce_codes(http_status,content,file_path):
         # Unknown Case
         case _: 
             print("Unknown status")
+   
     # Full header
     responce_header +=  ("Server: AlsToyBarn/1.0\r\n"
             f"Date: {current_dateandtime}\r\n"
-            f"Content-Type: {file_type(file_path)}\r\n"
-            f"Content-Length: {len(content)}\r\n"
-            "\r\n")     
+            f"Content-Type: {current_file_type}\r\n"
+            f"Content-Length: {length_content}\r\n"
+            "\r\n")  
+       
     return responce_header
 
 def open_file(file_path):
@@ -51,7 +55,7 @@ def open_file(file_path):
                     content = f.read()
         return content
     else:
-        return "error"
+        return b""
 
 def parsing_file(line):
     # Parsing file path from request command
@@ -64,23 +68,33 @@ def parsing_file(line):
     
     return site_path
 
-def respons(line):
+def file_path(line):
+    # Document root form command line
+    root_path = sys.argv[1]
+    root_path = root_path.lstrip("/")
+    # Orgnizing file path
+    directory_path = os.path.dirname(os.path.abspath(__file__)) 
+    site_path = parsing_file(line)    
+    file_path = os.path.join(directory_path,root_path,site_path)
+    return file_path
+
+def responce(line):
+    # Error content defalt 
+    content = b""
+    # Checking the request type
     if line.startswith("GET"):
-            # Orgnizing file path
-            directory_path = os.path.dirname(os.path.abspath(__file__))   
-            site_path = parsing_file(line)    
-            file_path = os.path.join(directory_path,site_path)
+            full_file_path = file_path(line)   
             # Getting content from file
-            if os.path.isfile(file_path):
-                content = open_file(file_path)
-                if content == "error":
-                    return "",responce_codes(404,"","")
+            if os.path.isfile(full_file_path):
+                content = open_file(full_file_path)
+                if not content:
+                    return content,responce_codes(404,content,"")
                 else:
-                    return content,responce_codes(200,content,file_path)
+                    return content,responce_codes(200,content,full_file_path)
             else:
-                return "",responce_codes(404,"","")
+                return content,responce_codes(404,content,"")
     else:
-        return "",responce_codes(405,"","")
+        return content,responce_codes(405,content,"")
 
 def request(conn):
         # Get request
@@ -89,27 +103,27 @@ def request(conn):
             if not data:
                 conn.close()
             else:
-                line = data.decode('utf-8')
                 # Get responce from request
-                content, response = respons(line) 
+                line = data.decode('utf-8')
+                content, response = responce(line) 
                 # Send responce
                 try:
                     conn.sendall(response.encode('utf-8') + content)
-                except (BrokenPipeError, ConnectionResetError, OSError):
+                except (OSError):
                     conn.close()
         except ConnectionResetError:
             conn.close()
   
 def main():
     # Comandline args check 
-    # if len(sys.argv) != 2:
-    #     print(f"Usage: python {sys.argv[0]} <port>")
-    #     sys.exit(1)
+    if len(sys.argv) != 3:
+        print(f"Usage: python {sys.argv[0]} <document_root> <port>")
+        sys.exit(1)
 
     # Server Listner
     host = 'localhost'
-    port = 2247
-    # port = int(sys.argv[1])
+    port = int(sys.argv[2])
+
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
