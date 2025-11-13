@@ -14,7 +14,7 @@ Batch file:
 - Http_Server.py
 
 How to run the project on browser:
-1. Terminal Run: python3 Http_Server.py 2247
+1. Terminal Run: python3 Http_Server.py /www 2247
 2. Browser one: http://localhost:2247/www/index.html
 3. Browser two: http://localhost:2247/www/index.html
 4. Browser one: Enjoy cat photo!

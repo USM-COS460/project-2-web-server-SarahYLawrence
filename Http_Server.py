@@ -109,10 +109,12 @@ def request(conn):
                 # Send responce
                 try:
                     conn.sendall(response.encode('utf-8') + content)
+                    conn.close()
                 except (OSError):
                     conn.close()
         except ConnectionResetError:
             conn.close()
+
   
 def main():
     # Comandline args check 
